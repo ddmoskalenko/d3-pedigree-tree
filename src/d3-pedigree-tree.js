@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {scaleLinear} from "d3-scale";
 import {nest,values} from "d3-collection";
 import {mean,min,max,ascending} from "d3-array";
@@ -28,9 +29,29 @@ export default function() {
   
   function pdgtree(){
     //create working nodes from input data (we dont want to modify the input) 
-    
+
     var node_list = _wrap_nodes(data);
-    node_list.forEach(function(d){_setNodeLevels(d);});
+    let maxDeep = 0;
+    let deepestNode =  null;
+
+    //console.log('before get deep:', node_list);
+
+    node_list.forEach(function (d) {
+      let cDeep = _getDeep(d);
+      if (cDeep > maxDeep) {
+        maxDeep = cDeep;
+        deepestNode = d;
+      }
+    });
+   // console.log('deepest level:', maxDeep);
+   // console.log('deppest node:', deepestNode);
+
+    _setNodeLevelBack(deepestNode, maxDeep);
+    //console.log(node_list);
+    // debugger;
+
+
+    // node_list.forEach(function (d) { _setNodeLevels(d);});
     _setBestRootNodeLevels(node_list);
     
     //create intermediate nodes for intergenerational links
@@ -366,15 +387,48 @@ export default function() {
     });
   }
   
+  function _getDeep(node) {// 
+    // console.log('_getDeep', node);
+    let level = 0;
+    if (node.parents && node.parents.length > 0) {
+      node.parents.forEach(element => {
+        let clevel = _getDeep(element) + 1;
+        if (clevel > level) level = clevel;
+      });
+    }
+    return level;
+  }
+
+
+  function _setNodeLevelBack(node,set_level){
+    // console.log('_setNodeLevelBack', node);
+    if (!node.level) {
+      node.level = (!set_level) ? 0 : set_level;
+      node.children.forEach(function(child){
+        //console.log('a1');
+        _setNodeLevelBack(child,node.level+1)
+      });
+      node.parents.forEach(function(child){
+        //console.log('a1');
+        _setNodeLevelBack(child,node.level-1)
+      });
+
+    } 
+  }
+
   
   function _setNodeLevels(node,set_level){
     if (!node.level) {
       node.level = (!set_level) ? 0 : set_level;
       node.children.forEach(function(child){
+        //console.log('a1');
         _setNodeLevels(child,node.level+1)
       });
     } else if (set_level){
+      //console.log('a2');
+
       if (set_level>node.level) {
+
         node.level = set_level;
         node.children.forEach(function(child){
           _setNodeLevels(child,node.level+1)
